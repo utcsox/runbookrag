@@ -1,11 +1,11 @@
-    .PHONY: setup up down test lint ingest eval clean
+.PHONY: setup up down test lint ingest eval clean
 
-    up:         ## full containerized stack (app + db)
-    	docker compose up -d --build
+up:         ## full containerized stack (app + db)
+	docker compose up -d --build
 
-    down:
-    	docker compose down
+down:
+	docker compose down
 
-    clean:      ## nuke local env + volumes, start fresh
-    	docker compose down -v
-    	rm -rf .venv
+clean:      ## nuke local env + volumes, start fresh
+	docker compose down -v
+	rm -rf .venv
