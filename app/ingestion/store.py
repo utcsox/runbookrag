@@ -14,10 +14,13 @@ import psycopg
 from pgvector import Vector
 from pgvector.psycopg import register_vector
 
-from app.ingestion.embedder import EmbeddedChunk
+from app.ingestion.embedder import (
+    DEFAULT_MODEL_NAME,
+    EmbeddedChunk,
+    embedding_dimension,
+)
 
 DEFAULT_DATABASE_URL = "postgresql://runbookrag:runbookrag@localhost:5432/runbookrag"
-EMBEDDING_DIM = 384
 
 
 def connect() -> psycopg.Connection:
@@ -34,7 +37,8 @@ def connect() -> psycopg.Connection:
     return conn
 
 
-def ensure_schema(conn: psycopg.Connection) -> None:
+def ensure_schema(conn: psycopg.Connection, model_name: str = DEFAULT_MODEL_NAME) -> None:
+    dim = embedding_dimension(model_name)
     conn.execute(
         f"""
         CREATE TABLE IF NOT EXISTS chunks (
@@ -44,7 +48,7 @@ def ensure_schema(conn: psycopg.Connection) -> None:
             heading_path TEXT[] NOT NULL,
             text TEXT NOT NULL,
             model TEXT NOT NULL,
-            embedding VECTOR({EMBEDDING_DIM}) NOT NULL,
+            embedding VECTOR({dim}) NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
         """

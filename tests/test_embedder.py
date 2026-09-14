@@ -1,7 +1,7 @@
 import math
 
 from app.ingestion.chunking import Chunk
-from app.ingestion.embedder import _load_model, embed_chunks
+from app.ingestion.embedder import _load_model, embed_chunks, embedding_dimension
 
 
 def _chunk(text: str) -> Chunk:
@@ -51,3 +51,8 @@ def test_model_is_cached_across_calls():
     first = _load_model("all-MiniLM-L6-v2")
     second = _load_model("all-MiniLM-L6-v2")
     assert first is second
+
+
+def test_embedding_dimension_matches_actual_vectors():
+    embedded = embed_chunks([_chunk("Redis is down")])
+    assert embedding_dimension() == len(embedded[0].embedding)

@@ -28,6 +28,10 @@ def _load_model(model_name: str) -> SentenceTransformer:
     return SentenceTransformer(model_name)
 
 
+def embedding_dimension(model_name: str = DEFAULT_MODEL_NAME) -> int:
+    return _load_model(model_name).get_embedding_dimension()
+
+
 def embed_chunks(
     chunks: list[Chunk],
     model_name: str = DEFAULT_MODEL_NAME,

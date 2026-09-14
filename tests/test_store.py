@@ -1,7 +1,7 @@
 import pytest
 
 from app.ingestion.chunking import Chunk
-from app.ingestion.embedder import EmbeddedChunk
+from app.ingestion.embedder import EmbeddedChunk, embedding_dimension
 from app.ingestion.store import (
     connect,
     count,
@@ -13,7 +13,7 @@ from app.ingestion.store import (
 )
 
 TEST_SOURCE = "test-store.md"
-DIM = 384
+DIM = embedding_dimension()
 
 
 def _embedded(text: str, chunk_index: int, embedding: list[float]) -> EmbeddedChunk:
