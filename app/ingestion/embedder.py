@@ -32,6 +32,12 @@ def embedding_dimension(model_name: str = DEFAULT_MODEL_NAME) -> int:
     return _load_model(model_name).get_embedding_dimension()
 
 
+def embed_text(text: str, model_name: str = DEFAULT_MODEL_NAME) -> list[float]:
+    model = _load_model(model_name)
+    vector = model.encode([text], show_progress_bar=False)[0]
+    return vector.tolist()
+
+
 def embed_chunks(
     chunks: list[Chunk],
     model_name: str = DEFAULT_MODEL_NAME,

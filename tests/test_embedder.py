@@ -1,7 +1,12 @@
 import math
 
 from app.ingestion.chunking import Chunk
-from app.ingestion.embedder import _load_model, embed_chunks, embedding_dimension
+from app.ingestion.embedder import (
+    _load_model,
+    embed_chunks,
+    embed_text,
+    embedding_dimension,
+)
 
 
 def _chunk(text: str) -> Chunk:
@@ -56,3 +61,11 @@ def test_model_is_cached_across_calls():
 def test_embedding_dimension_matches_actual_vectors():
     embedded = embed_chunks([_chunk("Redis is down")])
     assert embedding_dimension() == len(embedded[0].embedding)
+
+
+def test_embed_text_matches_embed_chunks_for_same_text():
+    text = "Redis is down and not responding to PING"
+    solo = embed_text(text)
+    batched = embed_chunks([_chunk(text)])[0].embedding
+
+    assert solo == batched
