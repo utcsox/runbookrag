@@ -2,6 +2,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from app.ingestion.chunking import Chunk
 from app.ingestion.embedder import embed_chunks
 from app.ingestion.store import (
@@ -9,6 +11,7 @@ from app.ingestion.store import (
     count,
     count_by_source,
     delete_by_source,
+    ensure_schema,
     store_chunks,
 )
 
@@ -27,10 +30,21 @@ def _run_ingest(*args: str) -> subprocess.CompletedProcess:
     )
 
 
-def test_ingest_script_stores_chunks_and_is_idempotent():
-    conn = connect()
-    delete_by_source(conn, SOURCE)
+@pytest.fixture
+def conn():
+    connection = connect()
+    ensure_schema(connection)
+    delete_by_source(connection, SOURCE)
+    delete_by_source(connection, OTHER_SOURCE)
 
+    yield connection
+
+    delete_by_source(connection, SOURCE)
+    delete_by_source(connection, OTHER_SOURCE)
+    connection.close()
+
+
+def test_ingest_script_stores_chunks_and_is_idempotent(conn):
     result = _run_ingest(str(RUNBOOK_PATH))
     assert result.returncode == 0, result.stderr
     first_count = count_by_source(conn, SOURCE)
@@ -40,13 +54,8 @@ def test_ingest_script_stores_chunks_and_is_idempotent():
     assert result.returncode == 0, result.stderr
     assert count_by_source(conn, SOURCE) == first_count
 
-    delete_by_source(conn, SOURCE)
 
-
-def test_ingest_script_relative_and_absolute_paths_agree():
-    conn = connect()
-    delete_by_source(conn, SOURCE)
-
+def test_ingest_script_relative_and_absolute_paths_agree(conn):
     relative = str(Path("data") / "runbooks" / "gitlab" / "gitaly-down.md")
     _run_ingest(relative)
     after_relative = count_by_source(conn, SOURCE)
@@ -56,17 +65,13 @@ def test_ingest_script_relative_and_absolute_paths_agree():
 
     assert after_relative == after_absolute > 0
 
-    delete_by_source(conn, SOURCE)
-
 
 def test_ingest_script_missing_path_exits_nonzero():
     result = _run_ingest("data/runbooks/does-not-exist.md")
     assert result.returncode != 0
 
 
-def test_ingest_script_clear_flag_wipes_the_whole_table():
-    conn = connect()
-    delete_by_source(conn, OTHER_SOURCE)
+def test_ingest_script_clear_flag_wipes_the_whole_table(conn):
     store_chunks(
         conn,
         embed_chunks(
@@ -80,5 +85,3 @@ def test_ingest_script_clear_flag_wipes_the_whole_table():
 
     assert count_by_source(conn, OTHER_SOURCE) == 0
     assert count(conn) == count_by_source(conn, SOURCE)
-
-    delete_by_source(conn, SOURCE)
