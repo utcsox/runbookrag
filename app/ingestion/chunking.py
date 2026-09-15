@@ -183,5 +183,8 @@ def chunk_file(
     chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
 ) -> list[Chunk]:
     return chunk_markdown(
-        path.read_text(), source=str(path), max_chars=max_chars, chunk_overlap=chunk_overlap
+        path.read_text(),
+        source=str(path.resolve()),
+        max_chars=max_chars,
+        chunk_overlap=chunk_overlap,
     )

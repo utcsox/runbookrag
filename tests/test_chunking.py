@@ -109,4 +109,15 @@ def test_real_runbooks_chunk_without_error():
         assert chunks, f"no chunks produced for {path.name}"
         for chunk in chunks:
             assert chunk.text.strip()
-            assert chunk.source == str(path)
+            assert chunk.source == str(path.resolve())
+
+
+def test_chunk_file_source_is_stable_across_relative_and_absolute_paths(monkeypatch):
+    monkeypatch.chdir(RUNBOOKS_DIR.parent.parent.parent)
+    relative_path = Path("data/runbooks/gitlab/gitaly-down.md")
+    absolute_path = relative_path.resolve()
+
+    from_relative = chunk_file(relative_path)
+    from_absolute = chunk_file(absolute_path)
+
+    assert from_relative[0].source == from_absolute[0].source == str(absolute_path)
