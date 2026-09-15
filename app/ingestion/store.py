@@ -13,6 +13,7 @@ import os
 import psycopg
 from pgvector import Vector
 from pgvector.psycopg import register_vector
+from psycopg_pool import ConnectionPool
 
 from app.ingestion.embedder import (
     DEFAULT_MODEL_NAME,
@@ -21,6 +22,11 @@ from app.ingestion.embedder import (
 )
 
 DEFAULT_DATABASE_URL = "postgresql://runbookrag:runbookrag@localhost:5432/runbookrag"
+
+
+def _configure_connection(conn: psycopg.Connection) -> None:
+    conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    register_vector(conn)
 
 
 def connect() -> psycopg.Connection:
@@ -32,9 +38,25 @@ def connect() -> psycopg.Connection:
             "Could not connect to Postgres. Is the database running? "
             "Start it with: docker compose up -d db"
         ) from e
-    conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
-    register_vector(conn)
+    _configure_connection(conn)
     return conn
+
+
+def create_pool(min_size: int = 1, max_size: int = 10) -> ConnectionPool:
+    """Create a connection pool for concurrent use (e.g. a web server).
+
+    Each connection the pool opens gets the same setup as connect() (vector
+    extension enabled, pgvector adapter registered) via the configure hook.
+    """
+    url = os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
+    return ConnectionPool(
+        url,
+        min_size=min_size,
+        max_size=max_size,
+        kwargs={"autocommit": True},
+        configure=_configure_connection,
+        open=True,
+    )
 
 
 def ensure_schema(conn: psycopg.Connection, model_name: str = DEFAULT_MODEL_NAME) -> None:
