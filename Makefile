@@ -13,7 +13,7 @@ ingest:     ## chunk + embed + store runbooks (default: data/runbooks/gitlab)
 	uv run python scripts/ingest.py $(or $(PATH_TO_INGEST),data/runbooks/gitlab)
 
 reset-db:   ## delete all rows from the chunks table (schema + container untouched)
-	uv run python -c "from app.ingestion.store import connect; connect().execute('TRUNCATE TABLE chunks'); print('Cleared all chunks')"
+	uv run python scripts/reset_db.py
 
 clean:      ## nuke local env + volumes, start fresh
 	docker compose down -v
