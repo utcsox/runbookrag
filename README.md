@@ -100,6 +100,24 @@ curl -X POST http://localhost:8000/search \
 
 Or open the interactive docs at [http://localhost:8000/docs](http://localhost:8000/docs) and try `POST /search` from there.
 
+## Running everything in Docker
+
+The steps above run the API on the host (`uv run uvicorn ...`) against a containerized database. If you'd rather run the whole stack — API included — in containers:
+
+```bash
+docker compose up -d --build
+```
+
+or equivalently, `make up`. This builds and starts both the `db` and `app` services; `app` serves on the same `http://localhost:8000`.
+
+The `app` container starts with an empty, unsearchable database until you ingest into it — running the ingestion script inside the container works the same way as running it on the host:
+
+```bash
+docker compose exec app uv run --no-dev python scripts/ingest.py data/runbooks/gitlab
+```
+
+After that, `/` and `/search` work exactly as shown above. Bring the stack down with `docker compose down` (or `make down`).
+
 ## Run the tests
 
 ```bash
