@@ -109,7 +109,7 @@ def test_real_runbooks_chunk_without_error():
         assert chunks, f"no chunks produced for {path.name}"
         for chunk in chunks:
             assert chunk.text.strip()
-            assert chunk.source == str(path.resolve())
+            assert chunk.source == path.name
 
 
 def test_chunk_file_source_is_stable_across_relative_and_absolute_paths(monkeypatch):
@@ -120,4 +120,22 @@ def test_chunk_file_source_is_stable_across_relative_and_absolute_paths(monkeypa
     from_relative = chunk_file(relative_path)
     from_absolute = chunk_file(absolute_path)
 
-    assert from_relative[0].source == from_absolute[0].source == str(absolute_path)
+    assert from_relative[0].source == from_absolute[0].source == "gitaly-down.md"
+
+
+def test_chunk_file_source_is_stable_across_entirely_different_directories(tmp_path):
+    """Same filename, two unrelated directories - simulates two different
+    people each having their own copy of the same runbook on disk."""
+    user_a_dir = tmp_path / "user-a" / "wherever-they-put-it"
+    user_b_dir = tmp_path / "user-b" / "downloads"
+    user_a_dir.mkdir(parents=True)
+    user_b_dir.mkdir(parents=True)
+
+    content = "# Runbook\n\n## Step\n\nSame content, different places.\n"
+    (user_a_dir / "redis-troubleshooting.md").write_text(content)
+    (user_b_dir / "redis-troubleshooting.md").write_text(content)
+
+    from_a = chunk_file(user_a_dir / "redis-troubleshooting.md")
+    from_b = chunk_file(user_b_dir / "redis-troubleshooting.md")
+
+    assert from_a[0].source == from_b[0].source == "redis-troubleshooting.md"

@@ -16,7 +16,7 @@ from app.ingestion.store import (
 )
 
 RUNBOOK_PATH = Path(__file__).parent.parent / "data" / "runbooks" / "gitlab" / "gitaly-down.md"
-SOURCE = str(RUNBOOK_PATH.resolve())
+SOURCE = RUNBOOK_PATH.name
 OTHER_SOURCE = "test-ingest-script-other.md"
 
 
@@ -64,6 +64,28 @@ def test_ingest_script_relative_and_absolute_paths_agree(conn):
     after_absolute = count_by_source(conn, SOURCE)
 
     assert after_relative == after_absolute > 0
+
+
+def test_ingest_script_same_file_from_different_directories_does_not_duplicate(conn, tmp_path):
+    """Simulates two different people, each with their own copy of the same
+    runbook on disk somewhere unrelated - ingesting both shouldn't duplicate."""
+    user_a_dir = tmp_path / "user-a"
+    user_b_dir = tmp_path / "user-b" / "nested"
+    user_a_dir.mkdir()
+    user_b_dir.mkdir(parents=True)
+
+    content = RUNBOOK_PATH.read_text()
+    (user_a_dir / SOURCE).write_text(content)
+    (user_b_dir / SOURCE).write_text(content)
+
+    result = _run_ingest(str(user_a_dir / SOURCE))
+    assert result.returncode == 0, result.stderr
+    first_count = count_by_source(conn, SOURCE)
+    assert first_count > 0
+
+    result = _run_ingest(str(user_b_dir / SOURCE))
+    assert result.returncode == 0, result.stderr
+    assert count_by_source(conn, SOURCE) == first_count
 
 
 def test_ingest_script_missing_path_exits_nonzero():

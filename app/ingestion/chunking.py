@@ -182,9 +182,16 @@ def chunk_file(
     max_chars: int = DEFAULT_MAX_CHARS,
     chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
 ) -> list[Chunk]:
+    """Chunk a markdown file, using its filename (not full path) as source.
+
+    A stable, filesystem-independent identity: the same file ingested from
+    different absolute paths (different machines, host vs. container, a
+    teammate's own clone) still dedupes correctly on upsert, since identity
+    doesn't depend on where the file happens to live.
+    """
     return chunk_markdown(
         path.read_text(),
-        source=str(path.resolve()),
+        source=path.name,
         max_chars=max_chars,
         chunk_overlap=chunk_overlap,
     )
